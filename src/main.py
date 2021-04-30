@@ -24,6 +24,9 @@ import enum
 # Initialize PyGame
 pygame.init()
 
+# Background
+background = pygame.image.load("background.png")
+
 # Create the Screen
 screen = pygame.display.set_mode(size=(800, 600))
 
@@ -51,6 +54,8 @@ def main():
     while running:
         # RGB - Red, Green, Blue
         screen.fill(color=(0, 0, 0))
+        # Background Image.
+        screen.blit(source=background, dest=(0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
