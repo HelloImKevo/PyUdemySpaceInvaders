@@ -18,6 +18,7 @@ Usage:
 
 from __future__ import annotations
 from annotations import overrides
+import math
 import pygame
 import random
 from abc import ABC, abstractmethod
@@ -61,22 +62,19 @@ def main():
 
             # If keystroke is pressed, check whether Right or Left
             if event.type == pygame.KEYDOWN:
-                print("A key has been pressed")
                 if event.key == pygame.K_LEFT:
-                    print("Left arrow is pressed")
                     world.get_player().set_speed(speed=-PLAYER_SPEED)
                 if event.key == pygame.K_RIGHT:
-                    print("Right arrow is pressed")
                     world.get_player().set_speed(speed=PLAYER_SPEED)
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                    print("Keystroke has been released")
                     world.get_player().set_speed(0.0)
                 elif event.key == pygame.K_SPACE:
                     world.create_bullet()
 
         world.update_actor_positions()
+        world.perform_collision_detection()
         world.draw_actors()
 
         pygame.display.update()
@@ -86,12 +84,14 @@ class ImageCache:
     player_image = None
     enemy_image_1 = None
     enemy_image_2 = None
+    enemy_image_3 = None
     bullet_image = None
 
     def init_images(self):
         self.player_image = pygame.image.load("player.png")
         self.enemy_image_1 = pygame.image.load("enemy_1.png")
         self.enemy_image_2 = pygame.image.load("enemy_2.png")
+        self.enemy_image_3 = pygame.image.load("enemy_3.png")
         self.bullet_image = pygame.image.load("bullet.png")
 
 
@@ -107,6 +107,8 @@ class World:
     bullets: list = list()
 
     image_cache = ImageCache()
+
+    score: int = 0
 
     def __init__(self, width: float, height: float):
         self.width = width
@@ -125,6 +127,12 @@ class World:
         print(str.format("world.x={}, world.y={}", x, y))
 
         self.add_enemy(Enemy(image=self.image_cache.enemy_image_1), x, y)
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_1), x, y)
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_1), x, y)
+
+        y += 60
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_2), x, y)
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_2), x, y)
         self.add_enemy(Enemy(image=self.image_cache.enemy_image_2), x, y)
 
     def get_player(self) -> Player:
@@ -150,6 +158,12 @@ class World:
             if bullet.should_destroy(world=self):
                 bullets_to_remove.append(bullet)
 
+        self.__destroy_bullets(bullets_to_remove)
+
+    def __destroy_bullet(self, bullet: Bullet):
+        self.bullets.remove(bullet)
+
+    def __destroy_bullets(self, bullets_to_remove: list):
         for bullet in bullets_to_remove:
             self.bullets.remove(bullet)
 
@@ -162,6 +176,16 @@ class World:
 
         for bullet in self.bullets:
             bullet.draw()
+
+    def perform_collision_detection(self):
+        for enemy in self.enemies:
+            for bullet in self.bullets:
+                if bullet.is_collision(enemy):
+                    print("Collision! Need to destroy enemy: " + str(enemy))
+                    self.__destroy_bullet(bullet)
+                    enemy.destroy_and_respawn()
+                    self.score += 1
+                    print(str.format("Score={}", self.score))
 
     def create_bullet(self):
         """
@@ -215,6 +239,12 @@ class Actor(ABC):
     @abstractmethod
     def on_world_boundary_collision(self, world: World):
         pass
+
+    def get_x_center(self) -> float:
+        return (self.x_pos + self.width) / 2.0
+
+    def get_y_center(self) -> float:
+        return (self.y_pos - self.height) / 2.0
 
     def set_position(self, x: float, y: float):
         self.x_pos = x
@@ -295,6 +325,15 @@ class Bullet(Actor):
         return (self.x_pos < 0 or self.x_pos > world.width
                 or self.y_pos < 0 or self.y_pos > world.height)
 
+    def is_collision(self, enemy: Enemy) -> bool:
+        distance: float = math.sqrt(
+            math.pow(enemy.get_x_center() - self.get_x_center(), 2) +
+            math.pow(enemy.get_y_center() - self.get_y_center(), 2))
+        # if distance < 50:
+        #     print(str.format("Close bullet collision : distance={}", distance))
+
+        return distance < 24
+
 
 # TODO: We need an Enemy container to keep all the Y-axis positions in-sync
 # (all the enemies should move in unison)
@@ -302,9 +341,10 @@ class Enemy(Actor):
     """
     An Enemy, controlled by game logic.
     """
+    STARTING_SPEED: int = 1
 
     # Initialize starting speed.
-    horizontal_speed: float = 1.0
+    horizontal_speed: float = STARTING_SPEED
 
     def increase_speed(self, amount: float):
         if self.horizontal_speed > 0.0:
@@ -325,7 +365,7 @@ class Enemy(Actor):
         # Move enemy down.
         self.y_pos += 24.00
         # Increase enemy speed.
-        self.increase_speed(0.2)
+        self.increase_speed(0.1)
 
         # Handle left side collision correction.
         if self.x_pos <= 0.0:
@@ -338,6 +378,13 @@ class Enemy(Actor):
             # Reset position to top of screen.
             self.y_pos = self.height
             self.horizontal_speed = 2.0
+
+    def destroy_and_respawn(self):
+        x = random.randint(0, self.width - 64)
+        y = random.randint(50, 150)
+        self.x_pos = x
+        self.y_pos = y
+        self.horizontal_speed = self.STARTING_SPEED
 
 
 if __name__ == '__main__':
