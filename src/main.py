@@ -16,6 +16,8 @@ Usage:
     python3 main.py
 """
 
+from __future__ import annotations
+from annotations import overrides
 import pygame
 import random
 from abc import ABC, abstractmethod
@@ -35,19 +37,14 @@ pygame.display.set_caption("Space Invaders")
 icon = pygame.image.load("ufo.png")
 pygame.display.set_icon(icon)
 
-# Player
-playerImg = pygame.image.load("player.png")
-
-# Enemy
-enemyImg = pygame.image.load("enemy_1.png")
-
 # Constants
-PLAYER_SPEED: float = 1.0
+PLAYER_SPEED: float = 1.5
+BULLET_SPEED: float = 3.0
 
 
 def main():
     world: World = World(width=800, height=600)
-    world.init_actors()
+    world.initialize()
 
     # Game Loop
     running = True
@@ -75,11 +72,27 @@ def main():
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     print("Keystroke has been released")
                     world.get_player().set_speed(0.0)
+                elif event.key == pygame.K_SPACE:
+                    print("Space bar key has been released")
+                    world.create_bullet()
 
         world.update_actor_positions()
         world.draw_actors()
 
         pygame.display.update()
+
+
+class ImageCache:
+    player_image = None
+    enemy_image_1 = None
+    enemy_image_2 = None
+    bullet_image = None
+
+    def init_images(self):
+        self.player_image = pygame.image.load("player.png")
+        self.enemy_image_1 = pygame.image.load("enemy_1.png")
+        self.enemy_image_2 = pygame.image.load("enemy_2.png")
+        self.bullet_image = pygame.image.load("bullet.png")
 
 
 class World:
@@ -91,13 +104,18 @@ class World:
 
     players: list = list()
     enemies: list = list()
+    bullets: list = list()
+
+    image_cache = ImageCache()
 
     def __init__(self, width: float, height: float):
         self.width = width
         self.height = height
 
-    def init_actors(self):
-        player: Player = Player(image=pygame.image.load("player.png"))
+    def initialize(self):
+        self.image_cache.init_images()
+
+        player: Player = Player(self.image_cache.player_image)
         player.set_position(x=370.0, y=480.0)
         self.players.append(player)
 
@@ -106,13 +124,13 @@ class World:
 
         print(str.format("world.x={}, world.y={}", x, y))
 
-        self.add_enemy(Enemy(image=pygame.image.load("enemy_1.png")), x, y)
-        self.add_enemy(Enemy(image=pygame.image.load("enemy_2.png")), x, y)
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_1), x, y)
+        self.add_enemy(Enemy(image=self.image_cache.enemy_image_2), x, y)
 
-    def get_player(self):
+    def get_player(self) -> Player:
         return self.players[0]
 
-    def add_enemy(self, enemy, x: int, y: int):
+    def add_enemy(self, enemy: Enemy, x: int, y: int):
         width: float = enemy.width
 
         if len(self.enemies) > 0:
@@ -123,11 +141,17 @@ class World:
         self.enemies.append(enemy)
 
     def update_actor_positions(self):
-        for player in self.players:
-            player.update_position(world=self)
+        self.__update_positions(self.players)
+        self.__update_positions(self.enemies)
+        self.__update_positions(self.bullets)
 
-        for enemy in self.enemies:
-            enemy.update_position(world=self)
+        bullets_to_remove = list()
+        for bullet in self.bullets:
+            if bullet.should_destroy(world=self):
+                bullets_to_remove.append(bullet)
+
+        for bullet in bullets_to_remove:
+            self.bullets.remove(bullet)
 
     def draw_actors(self):
         for player in self.players:
@@ -135,6 +159,22 @@ class World:
 
         for enemy in self.enemies:
             enemy.draw()
+
+        for bullet in self.bullets:
+            bullet.draw()
+
+    def create_bullet(self):
+        """
+        Creates a bullet instance at the Player's current position.
+        """
+        bullet: Bullet = Bullet(image=self.image_cache.bullet_image)
+        bullet.create(self.get_player(), BULLET_SPEED)
+        self.bullets.append(bullet)
+
+    def __update_positions(self, actors: list):
+        for actor in actors:
+            actor.update_position()
+            actor.handle_world_collision(world=self)
 
 
 # class CollisionBound(enum.Enum):
@@ -163,6 +203,14 @@ class Actor(ABC):
 
         print(str.format("width={}, height={}", self.width, self.height))
 
+    @abstractmethod
+    def update_position(self):
+        pass
+
+    @abstractmethod
+    def on_world_boundary_collision(self, world: World):
+        pass
+
     def set_position(self, x: float, y: float):
         self.x_pos = x
         self.y_pos = y
@@ -184,10 +232,6 @@ class Actor(ABC):
             # Top edge collision.
             self.on_world_boundary_collision(world=world)
 
-    @abstractmethod
-    def on_world_boundary_collision(self, world: World):
-        pass
-
     def draw(self):
         screen.blit(source=self.image, dest=(self.x_pos, self.y_pos))
 
@@ -202,11 +246,11 @@ class Player(Actor):
     def set_speed(self, speed: float):
         self.horizontal_speed = speed
 
-    def update_position(self, world: World):
+    @overrides(Actor)
+    def update_position(self):
         self.x_pos += self.horizontal_speed
-        self.handle_world_collision(world=world)
 
-    # Override abstract method
+    @overrides(Actor)
     def on_world_boundary_collision(self, world: World):
         if self.x_pos <= 0.0:
             self.x_pos = 0.0
@@ -216,6 +260,35 @@ class Player(Actor):
         if self.y_pos >= world.height:
             # Reset position to top of screen.
             self.y_pos = world.height - self.height
+
+
+# TODO: Optimize this by adding a 'Projectile Pool' from which Bullet instances
+# can be acquired and recycled.
+class Bullet(Actor):
+    """
+    The Bullets fired from the Player's spaceship.
+    """
+
+    vertical_speed: float = 0.0
+
+    def create(self, player: Player, speed: float):
+        self.x_pos = player.x_pos
+        self.y_pos = player.y_pos
+        self.vertical_speed = speed
+        print(str.format("Bullet Created : x={}, y={}, speed={}",
+                         self.x_pos, self.y_pos, self.vertical_speed))
+
+    @overrides(Actor)
+    def update_position(self):
+        self.y_pos -= self.vertical_speed
+
+    @overrides(Actor)
+    def on_world_boundary_collision(self, world: World):
+        pass
+
+    def should_destroy(self, world: World) -> bool:
+        return (self.x_pos < 0 or self.x_pos > world.width
+                or self.y_pos < 0 or self.y_pos > world.height)
 
 
 # TODO: We need an Enemy container to keep all the Y-axis positions in-sync
@@ -234,11 +307,11 @@ class Enemy(Actor):
         else:
             self.horizontal_speed -= amount
 
-    def update_position(self, world: World):
+    @overrides(Actor)
+    def update_position(self):
         self.x_pos += self.horizontal_speed
-        self.handle_world_collision(world=world)
 
-    # Override abstract method
+    @overrides(Actor)
     def on_world_boundary_collision(self, world: World):
         print(str.format("x={}, y={}", self.x_pos, self.y_pos))
 
@@ -247,7 +320,7 @@ class Enemy(Actor):
         # Move enemy down.
         self.y_pos += 24.00
         # Increase enemy speed.
-        self.increase_speed(0.5)
+        self.increase_speed(0.2)
 
         # Handle left side collision correction.
         if self.x_pos <= 0.0:
