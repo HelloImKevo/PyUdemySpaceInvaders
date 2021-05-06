@@ -39,7 +39,8 @@ pygame.display.set_icon(icon)
 
 # Constants
 PLAYER_SPEED: float = 1.5
-BULLET_SPEED: float = 3.0
+PLAYER_MAX_BULLETS: int = 2
+BULLET_SPEED: float = 2.0
 
 
 def main():
@@ -73,7 +74,6 @@ def main():
                     print("Keystroke has been released")
                     world.get_player().set_speed(0.0)
                 elif event.key == pygame.K_SPACE:
-                    print("Space bar key has been released")
                     world.create_bullet()
 
         world.update_actor_positions()
@@ -166,7 +166,12 @@ class World:
     def create_bullet(self):
         """
         Creates a bullet instance at the Player's current position.
+        Enforces a maximum number of Player projectiles.
         """
+        if len(self.bullets) >= PLAYER_MAX_BULLETS:
+            print("Maximum number of bullets reached.")
+            return
+
         bullet: Bullet = Bullet(image=self.image_cache.bullet_image)
         bullet.create(self.get_player(), BULLET_SPEED)
         self.bullets.append(bullet)
