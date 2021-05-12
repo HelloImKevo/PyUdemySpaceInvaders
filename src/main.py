@@ -22,7 +22,13 @@ import math
 import pygame
 import random
 from abc import ABC, abstractmethod
-import enum
+
+# import enum
+# class CollisionBound(enum.Enum):
+#     LEFT = 1
+#     RIGHT = 2
+#     TOP = 3
+#     BOTTOM = 4
 
 # Initialize PyGame
 pygame.init()
@@ -204,13 +210,6 @@ class World:
         for actor in actors:
             actor.update_position()
             actor.handle_world_collision(world=self)
-
-
-# class CollisionBound(enum.Enum):
-#     LEFT = 1
-#     RIGHT = 2
-#     TOP = 3
-#     BOTTOM = 4
 
 
 class Actor(ABC):
