@@ -82,6 +82,7 @@ def main():
         world.update_actor_positions()
         world.perform_collision_detection()
         world.draw_actors()
+        world.show_score()
 
         pygame.display.update()
 
@@ -114,11 +115,21 @@ class World:
 
     image_cache = ImageCache()
 
+    font: pygame.font.Font = pygame.font.Font('freesansbold.ttf', 36)
+    score_x_pos: int = 10
+    score_y_pos: int = 10
     score: int = 0
 
     def __init__(self, width: float, height: float):
         self.width = width
         self.height = height
+
+    def show_score(self):
+        # Functions that are implemented in C do not have names for their arguments,
+        # and you need to provide positional-only arguments.
+        score_text: pygame.Surface = self.font.render(
+            "Score: " + str(self.score), True, (255, 255, 255))
+        screen.blit(source=score_text, dest=(self.score_x_pos, self.score_y_pos))
 
     def initialize(self):
         self.image_cache.init_images()
