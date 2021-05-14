@@ -27,22 +27,33 @@ class World:
     image_cache = ImageCache()
 
     font: pygame.font.Font = None
+    game_over_font: pygame.font.Font = None
     score_x_pos: int = 10
     score_y_pos: int = 10
     score: int = 0
+
+    is_game_over: bool = False
 
     def __init__(self, width: float, height: float):
         self.width = width
         self.height = height
         self.font = pygame.font.Font('freesansbold.ttf', 36)
+        self.game_over_font = pygame.font.Font('freesansbold.ttf', 48)
 
-    def show_score(self):
+    def show_text(self):
         from main import screen
         # Functions that are implemented in C do not have names for their arguments,
         # and you need to provide positional-only arguments.
-        score_text: pygame.Surface = self.font.render(
-            "Score: " + str(self.score), True, (255, 255, 255))
-        screen.blit(source=score_text, dest=(self.score_x_pos, self.score_y_pos))
+        if self.is_game_over:
+            # Functions that are implemented in C do not have names for their arguments,
+            # and you need to provide positional-only arguments.
+            game_over_text: pygame.Surface = self.game_over_font.render(
+                'GAME OVER - Score: ' + str(self.score), True, (255, 100, 100))
+            screen.blit(source=game_over_text, dest=(120, 200))
+        else:
+            score_text: pygame.Surface = self.font.render(
+                "Score: " + str(self.score), True, (255, 255, 255))
+            screen.blit(source=score_text, dest=(self.score_x_pos, self.score_y_pos))
 
     def initialize(self):
         self.image_cache.init_images()
@@ -118,6 +129,12 @@ class World:
                     self.score += 1
                     print(str.format("Score={}", self.score))
 
+            for player in self.players:
+                if player.is_collision(enemy):
+                    print("Enemy collided with player. Game over!")
+                    self.__game_over()
+                    return
+
     def create_bullet(self):
         """
         Creates a bullet instance at the Player's current position.
@@ -135,3 +152,9 @@ class World:
         for actor in actors:
             actor.update_position()
             actor.handle_world_collision(world=self)
+
+    def __game_over(self):
+        self.is_game_over = True
+
+        for enemy in self.enemies:
+            enemy.send_to_the_void()

@@ -77,7 +77,7 @@ def main():
         world.update_actor_positions()
         world.perform_collision_detection()
         world.draw_actors()
-        world.show_score()
+        world.show_text()
 
         pygame.display.update()
 

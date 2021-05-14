@@ -24,12 +24,14 @@ class Actor(ABC):
     x_pos: float = 0.0
     y_pos: float = 0.0
 
+    is_sent_to_void: bool = False
+
     def __init__(self, image: pygame.Surface):
         self.image = image
         self.width = image.get_width()
         self.height = image.get_height()
 
-        print(str.format("width={}, height={}", self.width, self.height))
+        # print(str.format("width={}, height={}", self.width, self.height))
 
     @abstractmethod
     def update_position(self):
@@ -50,6 +52,9 @@ class Actor(ABC):
         self.y_pos = y
 
     def handle_world_collision(self, world: 'World'):
+        if self.is_sent_to_void:
+            return
+
         # Handle horizontal collisions (left and right sides)
         if self.x_pos <= 0.0:
             # Left side collision.
@@ -68,3 +73,11 @@ class Actor(ABC):
 
     def draw(self, screen: pygame.Surface):
         screen.blit(source=self.image, dest=(self.x_pos, self.y_pos))
+
+    def send_to_the_void(self) -> None:
+        """
+        Obliterates the Actor and sends it to the void.
+        """
+        self.x_pos = -1000
+        self.y_pos = -1000
+        self.is_sent_to_void = True

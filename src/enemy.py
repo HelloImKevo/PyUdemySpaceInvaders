@@ -26,6 +26,9 @@ class Enemy(Actor):
     horizontal_speed: float = STARTING_SPEED
 
     def increase_speed(self, amount: float):
+        if self.is_sent_to_void:
+            return
+
         if self.horizontal_speed > 0.0:
             self.horizontal_speed += amount
         else:
@@ -33,6 +36,9 @@ class Enemy(Actor):
 
     @overrides(Actor)
     def update_position(self):
+        if self.is_sent_to_void:
+            return
+
         self.x_pos += self.horizontal_speed
 
     @overrides(Actor)

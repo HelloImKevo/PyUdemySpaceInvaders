@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from actor import Actor
 from annotations import overrides
 from typing import TYPE_CHECKING
@@ -7,6 +9,7 @@ from typing import TYPE_CHECKING
 # Workaround for Circular Type Hinting Circular Dependencies
 if TYPE_CHECKING:
     from world import World
+    from enemy import Enemy
 
 
 class Player(Actor):
@@ -33,3 +36,10 @@ class Player(Actor):
         if self.y_pos >= world.height:
             # Reset position to top of screen.
             self.y_pos = world.height - self.height
+
+    def is_collision(self, enemy: 'Enemy') -> bool:
+        distance: float = math.sqrt(
+            math.pow(enemy.get_x_center() - self.get_x_center(), 2) +
+            math.pow(enemy.get_y_center() - self.get_y_center(), 2))
+
+        return distance < 24
