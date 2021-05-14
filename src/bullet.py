@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import math
 
+from pygame import mixer
+
 from actor import Actor
 from annotations import overrides
 from typing import TYPE_CHECKING
@@ -28,6 +30,8 @@ class Bullet(Actor):
         self.vertical_speed = speed
         print(str.format("Bullet Created : x={}, y={}, speed={}",
                          self.x_pos, self.y_pos, self.vertical_speed))
+        bullet_sound = mixer.Sound("sounds/laser.wav")
+        bullet_sound.play()
 
     @overrides(Actor)
     def update_position(self):

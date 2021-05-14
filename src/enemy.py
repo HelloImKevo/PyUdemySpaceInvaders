@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import random
 
+from pygame import mixer
+
 from actor import Actor
 from annotations import overrides
 from typing import TYPE_CHECKING
@@ -57,6 +59,9 @@ class Enemy(Actor):
             self.horizontal_speed = 2.0
 
     def destroy_and_respawn(self):
+        explosion_sound = mixer.Sound("sounds/explosion.wav")
+        explosion_sound.play()
+
         x = random.randint(0, self.width - 64)
         y = random.randint(50, 150)
         self.x_pos = x

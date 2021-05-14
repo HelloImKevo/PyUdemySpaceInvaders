@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import pygame
+from pygame import mixer
 
 from world import World
 
@@ -27,6 +28,10 @@ pygame.init()
 
 # Background
 background = pygame.image.load("assets/background.png")
+
+# Background Music
+mixer.music.load("sounds/background.wav")
+mixer.music.play(-1)
 
 # Create the Screen
 screen: pygame.Surface = pygame.display.set_mode(size=(800, 600))
