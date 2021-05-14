@@ -34,14 +34,14 @@ from abc import ABC, abstractmethod
 pygame.init()
 
 # Background
-background = pygame.image.load("background.png")
+background = pygame.image.load("assets/background.png")
 
 # Create the Screen
 screen = pygame.display.set_mode(size=(800, 600))
 
 # Title and Icon
 pygame.display.set_caption("Space Invaders")
-icon = pygame.image.load("ufo.png")
+icon = pygame.image.load("assets/ufo.png")
 pygame.display.set_icon(icon)
 
 # Constants
@@ -95,11 +95,11 @@ class ImageCache:
     bullet_image = None
 
     def init_images(self):
-        self.player_image = pygame.image.load("player.png")
-        self.enemy_image_1 = pygame.image.load("enemy_1.png")
-        self.enemy_image_2 = pygame.image.load("enemy_2.png")
-        self.enemy_image_3 = pygame.image.load("enemy_3.png")
-        self.bullet_image = pygame.image.load("bullet.png")
+        self.player_image = pygame.image.load("assets/player.png")
+        self.enemy_image_1 = pygame.image.load("assets/enemy_1.png")
+        self.enemy_image_2 = pygame.image.load("assets/enemy_2.png")
+        self.enemy_image_3 = pygame.image.load("assets/enemy_3.png")
+        self.bullet_image = pygame.image.load("assets/bullet.png")
 
 
 class World:
